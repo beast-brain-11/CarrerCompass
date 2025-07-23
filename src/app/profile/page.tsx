@@ -7,52 +7,110 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { userProfileData as initialUserProfileData } from '@/lib/placeholder-data';
 import type { UserProfile } from '@/lib/types';
 import { Save, FileUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/hooks/use-auth';
+import api from '@/lib/api';
 
 
 export default function ProfilePage() {
+    const { user } = useAuth();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
 
     useEffect(() => {
-        // Simulate fetching user profile data
-        setTimeout(() => {
-            setProfile(initialUserProfileData);
-            setIsLoading(false);
-        }, 500);
-    }, []);
+        if (user) {
+            const fetchProfile = async () => {
+                try {
+                    const data = await api.get(`/users/${user.uid}`);
+                    setProfile(data);
+                } catch (error) {
+                    console.error("Failed to fetch profile", error);
+                    toast({
+                        title: "Error",
+                        description: "Failed to load your profile.",
+                        variant: "destructive",
+                    });
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            fetchProfile();
+        }
+    }, [user, toast]);
 
-    const handleSave = () => {
-        // Here you would typically send the data to your backend
-        console.log("Saving profile:", profile);
-        toast({
-            title: "Profile Saved",
-            description: "Your changes have been saved successfully.",
-        });
-    }
+    const handleSave = async () => {
+        if (!profile || !user) return;
+        try {
+            await api.put(`/users/${user.uid}`, {
+                firstName: profile.first_name,
+                lastName: profile.last_name,
+                phoneNumber: profile.phone_number,
+                location: profile.location,
+                headline: profile.headline,
+                summary: profile.summary,
+                masterResume: profile.master_resume,
+            });
+            toast({
+                title: "Profile Saved",
+                description: "Your changes have been saved successfully.",
+            });
+        } catch (error) {
+            console.error("Failed to save profile", error);
+            toast({
+                title: "Error",
+                description: "Failed to save your profile.",
+                variant: "destructive",
+            });
+        }
+    };
 
     const handleChange = (field: keyof UserProfile, value: any) => {
         if (!profile) return;
         setProfile({ ...profile, [field]: value });
     };
 
-    const handleSkillsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-       if (!profile) return;
-       const skillsArray = e.target.value.split(',').map(skill => skill.trim());
-       setProfile({ ...profile, skills: skillsArray });
-    }
+    const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('resume', file);
+
+        try {
+            const response = await fetch('/api/parse-resume', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to parse resume.');
+            }
+
+            const data = await response.json();
+            handleChange('master_resume', data.text);
+            toast({
+                title: "Resume Parsed",
+                description: "Your resume has been successfully parsed.",
+            });
+        } catch (error) {
+            console.error("Failed to parse resume", error);
+            toast({
+                title: "Error",
+                description: "Failed to parse your resume.",
+                variant: "destructive",
+            });
+        }
+    };
 
   if (isLoading || !profile) {
     return (
@@ -107,8 +165,12 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="grid md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" value={profile.fullName} onChange={e => handleChange('fullName', e.target.value)} />
+              <Label htmlFor="first_name">First Name</Label>
+              <Input id="first_name" value={profile.first_name} onChange={e => handleChange('first_name', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="last_name">Last Name</Label>
+              <Input id="last_name" value={profile.last_name} onChange={e => handleChange('last_name', e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="headline">Headline</Label>
@@ -116,15 +178,15 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input id="phone" value={profile.phoneNumber} onChange={e => handleChange('phoneNumber', e.target.value)}/>
+              <Input id="phone" value={profile.phone_number} onChange={e => handleChange('phone_number', e.target.value)}/>
             </div>
              <div className="space-y-2">
-              <Label htmlFor="website">Website</Label>
-              <Input id="website" value={profile.website} onChange={e => handleChange('website', e.target.value)} />
+              <Label htmlFor="location">Location</Label>
+              <Input id="location" value={profile.location} onChange={e => handleChange('location', e.target.value)} />
             </div>
             <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="linkedin">LinkedIn</Label>
-              <Input id="linkedin" value={profile.linkedIn} onChange={e => handleChange('linkedIn', e.target.value)} />
+              <Label htmlFor="summary">Summary</Label>
+              <Textarea id="summary" value={profile.summary} onChange={e => handleChange('summary', e.target.value)} />
             </div>
           </CardContent>
         </Card>
@@ -137,23 +199,17 @@ export default function ProfilePage() {
           <CardContent className="space-y-4">
              <div className="space-y-2">
               <Label htmlFor="resume-text">Resume Text</Label>
-              <Textarea id="resume-text" rows={15} value={profile.masterResume.text} onChange={e => handleChange('masterResume', { ...profile.masterResume, text: e.target.value })} />
+              <Textarea id="resume-text" rows={15} value={profile.master_resume} onChange={e => handleChange('master_resume', e.target.value)} />
             </div>
-            <Button variant="outline">
-                <FileUp className="mr-2 h-4 w-4" /> Upload New Resume
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-headline">Skills</CardTitle>
-            <CardDescription>A comma-separated list of your top skills.</CardDescription>
-          </CardHeader>
-          <CardContent>
-             <div className="space-y-2">
-              <Label htmlFor="skills">Your Skills</Label>
-              <Textarea id="skills" rows={3} value={profile.skills.join(', ')} onChange={handleSkillsChange}/>
+            <div className="relative">
+                <Label htmlFor="resume-upload">
+                    <Button variant="outline" asChild>
+                        <span>
+                            <FileUp className="mr-2 h-4 w-4" /> Upload New Resume
+                        </span>
+                    </Button>
+                </Label>
+                <Input id="resume-upload" type="file" className="sr-only" onChange={handleResumeUpload} accept=".pdf" />
             </div>
           </CardContent>
         </Card>

@@ -1,66 +1,69 @@
 export interface UserProfile {
-  fullName: string;
+  id: string;
+  firebase_uid: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  location: string;
   headline: string;
-  phoneNumber: string;
-  website: string;
-  linkedIn: string;
-  masterResume: {
-    url: string;
-    text: string;
-    parsedOn: Date;
-  };
-  workExperience: WorkExperience[];
-  education: Education[];
-  skills: string[];
-  jobPreferences: {
-    titles: string[];
-    locations: string[];
-    workplace: Array<'remote' | 'hybrid' | 'onsite'>;
-    minSalary: number;
-    experienceLevels: string[];
-  };
+  summary: string;
+  master_resume: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface WorkExperience {
-  title: string;
-  company: string;
-  startDate: string;
-  endDate: string;
+  id: string;
+  user_id: string;
+  job_title: string;
+  company_name: string;
+  location: string;
+  start_date: string;
+  end_date: string;
+  is_current: boolean;
   description: string;
-  skillsUsed: string[];
 }
 
 export interface Education {
-  institution: string;
+  id: string;
+  user_id: string;
+  institution_name: string;
   degree: string;
-  gradDate: string;
-  details: string;
+  field_of_study: string;
+  start_date: string;
+  end_date: string;
+  description: string;
+}
+
+export interface Skill {
+    id: string;
+    user_id: string;
+    skill_name: string;
 }
 
 export interface Job {
   id: string;
-  jobTitle: string;
-  companyName: string;
+  title: string;
+  company_name: string;
   location: string;
-  descriptionHTML: string;
-  descriptionText: string;
-  sourceURL: string;
-  sourceSite: string;
-  postedAt: Date;
-  scrapedAt: Date;
-  requiredSkills: string[];
-  companyCultureSummary?: string;
+  description: string;
+  url: string;
+  source: string;
+  posted_at: string;
 }
 
 export interface Application {
   id: string;
-  userId: string;
-  jobId: string;
-  jobSnapshot: Partial<Job>;
-  status: 'saved' | 'applied' | 'interviewing' | 'offer' | 'rejected' | 'archived';
-  appliedAt?: Date;
+  user_id: string;
+  job_id: string;
+  status: 'interested' | 'applied' | 'interviewing' | 'offer' | 'rejected';
+  applied_at: string;
   notes: string;
-  contacts: Array<{ name: string; title: string; linkedIn: string }>;
+  // Joined from jobs table
+  title?: string;
+  company_name?: string;
+  location?: string;
 }
 
 export interface InterviewPrep {

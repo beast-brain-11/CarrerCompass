@@ -1,83 +1,65 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, MapPin, Briefcase, Filter, X } from 'lucide-react';
 import AppLayout from '@/components/app-layout';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { jobPostingsData } from '@/lib/placeholder-data';
 import JobCard from './job-card';
 import type { Job } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import api from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
-  const [workplace, setWorkplace] = useState({
-    remote: false,
-    hybrid: false,
-    onsite: false,
-  });
+  const [page, setPage] = useState(1);
+
+  const fetchJobs = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        search: searchQuery,
+        location: locationQuery,
+        page: String(page),
+        limit: '10',
+      });
+      const data = await api.get(`/jobs?${params.toString()}`);
+      setJobs(data);
+    } catch (error) {
+      console.error("Failed to fetch jobs", error);
+      toast({
+        title: "Error",
+        description: "Failed to load jobs.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchQuery, locationQuery, page, toast]);
 
   useEffect(() => {
-    // Simulate fetching data
-    setTimeout(() => {
-      setJobs(jobPostingsData);
-      setIsLoading(false);
-    }, 500);
-  }, []);
-
-  const filteredJobs = useMemo(() => {
-    let result = jobs;
-
-    if (searchQuery) {
-      result = result.filter(job =>
-        job.jobTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        job.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        job.descriptionText.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    if (locationQuery) {
-      result = result.filter(job =>
-        job.location.toLowerCase().includes(locationQuery.toLowerCase())
-      );
-    }
-    
-    const selectedWorkplaces = Object.entries(workplace)
-      .filter(([, checked]) => checked)
-      .map(([key]) => key);
-
-    if (selectedWorkplaces.length > 0) {
-        result = result.filter(job => {
-            if (selectedWorkplaces.includes('remote') && job.location.toLowerCase().includes('remote')) return true;
-            if (selectedWorkplaces.includes('hybrid') && job.location.toLowerCase().includes('hybrid')) return true;
-            if (selectedWorkplaces.includes('onsite') && !job.location.toLowerCase().includes('remote') && !job.location.toLowerCase().includes('hybrid')) return true;
-            return false;
-        });
-    }
-
-    return result;
-  }, [jobs, searchQuery, locationQuery, workplace]);
-  
-  const handleWorkplaceChange = (type: keyof typeof workplace) => {
-    setWorkplace(prev => ({...prev, [type]: !prev[type]}));
-  }
+    const timer = setTimeout(() => {
+        fetchJobs();
+    }, 500); // Debounce requests
+    return () => clearTimeout(timer);
+  }, [fetchJobs]);
 
   const resetFilters = () => {
     setSearchQuery('');
     setLocationQuery('');
-    setWorkplace({ remote: false, hybrid: false, onsite: false });
+    setPage(1);
   }
   
-  const hasActiveFilters = searchQuery || locationQuery || Object.values(workplace).some(v => v);
+  const hasActiveFilters = searchQuery || locationQuery;
 
   return (
     <AppLayout>
@@ -102,23 +84,6 @@ export default function JobsPage() {
               <Input id="location" placeholder="City or remote" className="pl-10" value={locationQuery} onChange={e => setLocationQuery(e.target.value)} />
             </div>
           </div>
-          <div className="space-y-4">
-            <Label>Workplace</Label>
-            <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                    <Checkbox id="remote" checked={workplace.remote} onCheckedChange={() => handleWorkplaceChange('remote')} />
-                    <Label htmlFor="remote" className="font-normal">Remote</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <Checkbox id="hybrid" checked={workplace.hybrid} onCheckedChange={() => handleWorkplaceChange('hybrid')} />
-                    <Label htmlFor="hybrid" className="font-normal">Hybrid</Label>
-                </div>
-                 <div className="flex items-center space-x-2">
-                    <Checkbox id="onsite" checked={workplace.onsite} onCheckedChange={() => handleWorkplaceChange('onsite')} />
-                    <Label htmlFor="onsite" className="font-normal">On-site</Label>
-                </div>
-            </div>
-          </div>
           {hasActiveFilters && (
             <Button variant="ghost" className="w-full" onClick={resetFilters}>
                 <X className="mr-2 h-4 w-4" /> Clear Filters
@@ -131,7 +96,7 @@ export default function JobsPage() {
             <h1 className="text-3xl font-headline font-bold">Job Feed</h1>
             <div className="flex items-center gap-2 text-muted-foreground">
                 <Briefcase className="h-5 w-5" />
-                <span>{isLoading ? '...' : filteredJobs.length} opportunities</span>
+                <span>{isLoading ? '...' : jobs.length} opportunities</span>
             </div>
           </div>
           <div className="space-y-4">
@@ -142,8 +107,8 @@ export default function JobsPage() {
                     <Skeleton className="h-40 w-full" />
                 </>
             ) : (
-                 filteredJobs.length > 0 ? (
-                    filteredJobs.map((job) => (
+                 jobs.length > 0 ? (
+                    jobs.map((job) => (
                         <JobCard key={job.id} job={job} />
                     ))
                 ) : (

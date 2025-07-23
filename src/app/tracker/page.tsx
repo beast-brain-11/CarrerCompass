@@ -3,14 +3,15 @@
 import { useState, useEffect } from 'react';
 import AppLayout from '@/components/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { applicationsData } from '@/lib/placeholder-data';
 import type { Application } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Building, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import api from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 const columnsConfig: { id: Application['status']; title: string }[] = [
-  { id: 'saved', title: 'Saved' },
+  { id: 'interested', title: 'Interested' },
   { id: 'applied', title: 'Applied' },
   { id: 'interviewing', title: 'Interviewing' },
   { id: 'offer', title: 'Offer' },
@@ -24,10 +25,10 @@ const ApplicationCard = ({ application, onDragStart }: { application: Applicatio
     onDragStart={(e) => onDragStart(e, application.id, application.status)}
   >
     <CardHeader className="p-4">
-      <CardTitle className="text-base font-semibold">{application.jobSnapshot.jobTitle}</CardTitle>
+      <CardTitle className="text-base font-semibold">{application.title}</CardTitle>
       <div className="flex items-center gap-2 text-sm text-muted-foreground pt-1">
         <Building className="h-4 w-4" />
-        <span>{application.jobSnapshot.companyName}</span>
+        <span>{application.company_name}</span>
       </div>
     </CardHeader>
     <CardContent className="p-4 pt-0">
@@ -40,29 +41,54 @@ const ApplicationCard = ({ application, onDragStart }: { application: Applicatio
 export default function TrackerPage() {
     const [applications, setApplications] = useState<Application[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
 
     useEffect(() => {
-        // Simulate fetching data
-        setTimeout(() => {
-            setApplications(applicationsData);
-            setIsLoading(false);
-        }, 300);
-    }, []);
+        const fetchApplications = async () => {
+            setIsLoading(true);
+            try {
+                const data = await api.get('/applications');
+                setApplications(data);
+            } catch (error) {
+                console.error("Failed to fetch applications", error);
+                toast({
+                    title: "Error",
+                    description: "Failed to load applications.",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchApplications();
+    }, [toast]);
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, appId: string, sourceStatus: Application['status']) => {
         e.dataTransfer.setData("applicationId", appId);
         e.dataTransfer.setData("sourceStatus", sourceStatus);
     };
 
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetStatus: Application['status']) => {
+    const handleDrop = async (e: React.DragEvent<HTMLDivElement>, targetStatus: Application['status']) => {
         e.preventDefault();
         const applicationId = e.dataTransfer.getData("applicationId");
         
-        setApplications(prev => 
-            prev.map(app => 
-                app.id === applicationId ? { ...app, status: targetStatus } : app
-            )
+        const originalApplications = applications;
+        const updatedApplications = applications.map(app => 
+            app.id === applicationId ? { ...app, status: targetStatus } : app
         );
+        setApplications(updatedApplications);
+
+        try {
+            await api.put(`/applications/${applicationId}`, { status: targetStatus });
+        } catch (error) {
+            setApplications(originalApplications);
+            console.error("Failed to update application status", error);
+            toast({
+                title: "Error",
+                description: "Failed to update application status.",
+                variant: "destructive",
+            });
+        }
     };
 
     const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
