@@ -1,17 +1,23 @@
+'use client';
+
 import Link from 'next/link';
 import { Briefcase, KanbanSquare, Mic, ArrowRight } from 'lucide-react';
 import AppLayout from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { userProfileData } from '@/lib/data';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const userName = user?.displayName || userProfileData.fullName.split(' ')[0] || 'there';
+  
   return (
     <AppLayout>
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-headline font-bold text-gray-900 dark:text-gray-50">
-            Welcome back, {userProfileData.fullName.split(' ')[0]}!
+            Welcome back, {userName}!
           </h1>
           <p className="mt-2 text-lg text-muted-foreground">
             Here&apos;s your career launchpad. Let&apos;s find your next big opportunity.
