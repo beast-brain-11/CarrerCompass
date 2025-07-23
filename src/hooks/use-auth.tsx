@@ -51,20 +51,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 description: error.message,
             });
         } finally {
-            setLoading(false);
+            // We set loading to false here only if there was no redirect result.
+            // If there was a redirect, the onAuthStateChanged will handle setting the user
+            // and the other useEffect will handle navigation, so we avoid a flash of content.
+            const result = await getRedirectResult(auth); // Check again, might be cached
+            if (!result) {
+                setLoading(false);
+            }
         }
     }
+    
+    // Call this immediately
     handleRedirectResult();
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      if (loading) { // Only set loading to false if it's the initial auth check
-          setLoading(false);
-      }
+      // This is the main loading state controller.
+      // It ensures we don't stop loading until we know the auth state.
+      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [router, toast]);
   
   useEffect(() => {
     if (loading) return;
@@ -72,27 +80,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/';
     const isSurveyPage = pathname === '/survey';
     
-    // If there is a user, but they are not the admin and they try to access the survey page after their first time
-    // we should redirect them to the dashboard. We can assume if they have a user object, they are not a new user
-    // unless they just came from a redirect. The redirect handler above handles new users.
-    if (user && isSurveyPage && user.email !== adminEmail) {
-        // This check is tricky because a new user might be on the survey page.
-        // We'll rely on the redirect handler to manage new user flow.
-        // For existing users landing on survey, redirect them.
-        // A simple way is to check if they have a display name, as it's set on first reg.
-        if (user.displayName) {
-             router.push('/dashboard');
-             return;
-        }
-    }
-
     // If user is admin, they can bypass the survey page
     if (user?.email === adminEmail && isSurveyPage) {
         router.push('/dashboard');
         return;
     }
 
-    if (!user && !isAuthPage) {
+    if (!user && !isAuthPage && !isSurveyPage) {
       router.push('/login');
     }
     
