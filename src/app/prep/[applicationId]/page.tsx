@@ -1,13 +1,54 @@
+'use client'
+
 import { notFound } from 'next/navigation';
 import AppLayout from '@/components/app-layout';
-import { applicationsData, userProfileData } from '@/lib/data';
+import { applicationsData, userProfileData } from '@/lib/placeholder-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import MockInterviewer from './mock-interviewer';
 import { Building, Briefcase } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { useEffect, useState } from 'react';
+import type { Application } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function InterviewPrepPage({ params }: { params: { applicationId: string } }) {
-  const application = applicationsData.find((app) => app.id === params.applicationId);
+  const [application, setApplication] = useState<Application | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate fetching application data
+    const foundApplication = applicationsData.find((app) => app.id === params.applicationId);
+    if (foundApplication) {
+      setApplication(foundApplication);
+    }
+    setIsLoading(false);
+  }, [params.applicationId]);
+
+  if (isLoading) {
+    return (
+        <AppLayout>
+            <div className="grid lg:grid-cols-[1fr_420px] gap-8 items-start">
+                <div>
+                     <Skeleton className="h-10 w-3/4 mb-2" />
+                     <Skeleton className="h-6 w-1/2 mb-6" />
+                     <Card>
+                        <CardHeader>
+                            <Skeleton className="h-8 w-1/2" />
+                            <Skeleton className="h-4 w-3/4" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="h-[50vh] w-full" />
+                        </CardContent>
+                     </Card>
+                </div>
+                 <div className="sticky top-20 space-y-6">
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-48 w-full" />
+                </div>
+            </div>
+        </AppLayout>
+    )
+  }
 
   if (!application || !application.jobSnapshot) {
     notFound();

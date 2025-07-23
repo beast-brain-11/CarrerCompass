@@ -1,24 +1,28 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import AppLayout from '@/components/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { applicationsData } from '@/lib/data';
+import { applicationsData } from '@/lib/placeholder-data';
 import type { Application } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Building, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const columns: Application['status'][] = ['saved', 'applied', 'interviewing', 'offer', 'rejected'];
+const columnsConfig: { id: Application['status']; title: string }[] = [
+  { id: 'saved', title: 'Saved' },
+  { id: 'applied', title: 'Applied' },
+  { id: 'interviewing', title: 'Interviewing' },
+  { id: 'offer', title: 'Offer' },
+  { id: 'rejected', title: 'Rejected' },
+];
 
-const columnTitles: Record<Application['status'], string> = {
-  saved: 'Saved',
-  applied: 'Applied',
-  interviewing: 'Interviewing',
-  offer: 'Offer',
-  rejected: 'Rejected',
-  archived: 'Archived',
-};
-
-const ApplicationCard = ({ application }: { application: Application }) => (
-  <Card className="mb-4 cursor-grab active:cursor-grabbing">
+const ApplicationCard = ({ application, onDragStart }: { application: Application, onDragStart: (e: React.DragEvent<HTMLDivElement>, appId: string, sourceStatus: Application['status']) => void }) => (
+  <Card 
+    className="mb-4 cursor-grab active:cursor-grabbing"
+    draggable
+    onDragStart={(e) => onDragStart(e, application.id, application.status)}
+  >
     <CardHeader className="p-4">
       <CardTitle className="text-base font-semibold">{application.jobSnapshot.jobTitle}</CardTitle>
       <div className="flex items-center gap-2 text-sm text-muted-foreground pt-1">
@@ -34,8 +38,40 @@ const ApplicationCard = ({ application }: { application: Application }) => (
 );
 
 export default function TrackerPage() {
-  const applicationsByColumn = columns.reduce((acc, status) => {
-    acc[status] = applicationsData.filter((app) => app.status === status);
+    const [applications, setApplications] = useState<Application[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        // Simulate fetching data
+        setTimeout(() => {
+            setApplications(applicationsData);
+            setIsLoading(false);
+        }, 300);
+    }, []);
+
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, appId: string, sourceStatus: Application['status']) => {
+        e.dataTransfer.setData("applicationId", appId);
+        e.dataTransfer.setData("sourceStatus", sourceStatus);
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetStatus: Application['status']) => {
+        e.preventDefault();
+        const applicationId = e.dataTransfer.getData("applicationId");
+        
+        setApplications(prev => 
+            prev.map(app => 
+                app.id === applicationId ? { ...app, status: targetStatus } : app
+            )
+        );
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+    };
+
+
+  const applicationsByColumn = columnsConfig.reduce((acc, col) => {
+    acc[col.id] = applications.filter((app) => app.status === col.id);
     return acc;
   }, {} as Record<Application['status'], Application[]>);
 
@@ -50,23 +86,28 @@ export default function TrackerPage() {
         </div>
         
         <div className="flex gap-6 overflow-x-auto pb-4">
-          {columns.map((status) => (
-            <div key={status} className="w-72 flex-shrink-0">
+          {columnsConfig.map((col) => (
+            <div 
+                key={col.id} 
+                className="w-72 flex-shrink-0"
+                onDrop={(e) => handleDrop(e, col.id)}
+                onDragOver={handleDragOver}
+            >
               <Card className="bg-muted/50 h-full">
                 <CardHeader className="p-4">
                   <CardTitle className="text-lg font-headline flex justify-between items-center">
-                    {columnTitles[status]}
-                    <Badge variant="secondary">{applicationsByColumn[status].length}</Badge>
+                    {col.title}
+                    <Badge variant="secondary">{applicationsByColumn[col.id]?.length || 0}</Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 pt-0">
-                  {applicationsByColumn[status].length > 0 ? (
-                    applicationsByColumn[status].map((app) => (
-                      <ApplicationCard key={app.id} application={app} />
+                <CardContent className="p-4 pt-0 min-h-[200px]">
+                  {applicationsByColumn[col.id]?.length > 0 ? (
+                    applicationsByColumn[col.id].map((app) => (
+                      <ApplicationCard key={app.id} application={app} onDragStart={handleDragStart}/>
                     ))
                   ) : (
                     <div className="text-center text-sm text-muted-foreground py-8">
-                      No applications in this stage.
+                      Drop applications here.
                     </div>
                   )}
                 </CardContent>

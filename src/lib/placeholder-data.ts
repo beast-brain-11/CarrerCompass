@@ -1,7 +1,7 @@
 import type { UserProfile, Job, Application } from './types';
 
-// This file is deprecated. Please use placeholder-data.ts
 // In a real application, this data would be fetched from a database.
+// This file provides placeholder data for UI development.
 
 export const userProfileData: UserProfile = {
   fullName: 'Strategic Sarah',
@@ -103,7 +103,7 @@ Qualifications:
     id: 'job-2',
     jobTitle: 'Lead Product Manager, Growth',
     companyName: 'ConnectSphere',
-    location: 'New York, NY',
+    location: 'New York, NY (Hybrid)',
     descriptionHTML: '<p>We are looking for a data-driven Growth PM...</p>',
     descriptionText: `ConnectSphere is looking for a data-driven Lead Product Manager to spearhead our growth initiatives. You will be responsible for identifying and executing on opportunities to grow our user base and increase engagement. You will own the growth funnel, from acquisition to retention, and will use data to inform your decisions.
     
@@ -127,7 +127,7 @@ Qualifications:
     id: 'job-3',
     jobTitle: 'Product Manager, Mobile',
     companyName: 'MobileFirst Apps',
-    location: 'Remote',
+    location: 'Austin, TX',
     descriptionHTML: '<p>We are a mobile-first company looking for a PM...</p>',
     descriptionText: `This is a job description for a mobile product manager.`,
     sourceURL: 'https://example.com/jobs/3',
@@ -135,6 +135,19 @@ Qualifications:
     postedAt: new Date('2024-05-19T11:00:00Z'),
     scrapedAt: new Date(),
     requiredSkills: ['Mobile Products', 'iOS', 'Android', 'User Engagement'],
+  },
+    {
+    id: 'job-4',
+    jobTitle: 'Technical Program Manager',
+    companyName: 'QuantumLeap',
+    location: 'Boston, MA',
+    descriptionHTML: '<p>Manage complex engineering projects...</p>',
+    descriptionText: `We are seeking a Technical Program Manager to drive our most ambitious projects. You will coordinate between multiple engineering teams, define project schedules, and mitigate risks to ensure successful delivery of our next-generation quantum computing hardware.`,
+    sourceURL: 'https://example.com/jobs/4',
+    sourceSite: 'Company Website',
+    postedAt: new Date('2024-05-23T09:00:00Z'),
+    scrapedAt: new Date(),
+    requiredSkills: ['Program Management', 'Agile', 'JIRA', 'Risk Management'],
   },
 ];
 
@@ -166,6 +179,15 @@ export const applicationsData: Application[] = [
         jobSnapshot: jobPostingsData[2],
         status: 'saved',
         notes: 'Looks interesting, need to tailor resume before applying.',
+        contacts: [],
+    },
+    {
+        id: 'app-4',
+        userId: 'user-123',
+        jobId: 'job-4',
+        jobSnapshot: jobPostingsData[3],
+        status: 'saved',
+        notes: 'Need to research quantum computing basics before applying.',
         contacts: [],
     }
 ];

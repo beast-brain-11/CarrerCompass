@@ -5,7 +5,7 @@ import { Briefcase, KanbanSquare, Mic, ArrowRight } from 'lucide-react';
 import AppLayout from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { userProfileData } from '@/lib/data';
+import { userProfileData } from '@/lib/placeholder-data';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function DashboardPage() {
