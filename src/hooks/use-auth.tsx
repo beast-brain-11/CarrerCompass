@@ -1,10 +1,11 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, User, getRedirectResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from './use-toast';
 
 interface AuthContextType {
   user: User | null;
@@ -18,12 +19,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
   const adminEmail = 'priaanshgupta@gmail.com';
 
   useEffect(() => {
+    const handleRedirectResult = async () => {
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                const user = result.user;
+                toast({
+                    title: "Success!",
+                    description: "You've been logged in successfully.",
+                });
+
+                if (user.email === adminEmail) {
+                    router.push('/dashboard');
+                } else {
+                    const isNewUser = result.additionalUserInfo?.isNewUser;
+                    if (isNewUser) {
+                        router.push('/survey');
+                    } else {
+                        router.push('/dashboard');
+                    }
+                }
+            }
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Login failed",
+                description: error.message,
+            });
+        } finally {
+            setLoading(false);
+        }
+    }
+    handleRedirectResult();
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
-      setLoading(false);
+      if (loading) { // Only set loading to false if it's the initial auth check
+          setLoading(false);
+      }
     });
 
     return () => unsubscribe();
@@ -34,6 +71,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/';
     const isSurveyPage = pathname === '/survey';
+    
+    // If there is a user, but they are not the admin and they try to access the survey page after their first time
+    // we should redirect them to the dashboard. We can assume if they have a user object, they are not a new user
+    // unless they just came from a redirect. The redirect handler above handles new users.
+    if (user && isSurveyPage && user.email !== adminEmail) {
+        // This check is tricky because a new user might be on the survey page.
+        // We'll rely on the redirect handler to manage new user flow.
+        // For existing users landing on survey, redirect them.
+        // A simple way is to check if they have a display name, as it's set on first reg.
+        if (user.displayName) {
+             router.push('/dashboard');
+             return;
+        }
+    }
 
     // If user is admin, they can bypass the survey page
     if (user?.email === adminEmail && isSurveyPage) {
@@ -41,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
 
-    if (!user && !isAuthPage && !isSurveyPage) {
+    if (!user && !isAuthPage) {
       router.push('/login');
     }
     

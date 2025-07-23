@@ -16,7 +16,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -84,15 +84,9 @@ export default function LoginPage() {
     setIsGoogleLoading(true);
     try {
         const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
-        toast({
-            title: "Success!",
-            description: "You've been logged in successfully with Google.",
-        });
-        router.push('/dashboard');
+        await signInWithRedirect(auth, provider);
     } catch (error: any) {
         handleError(error);
-    } finally {
         setIsGoogleLoading(false);
     }
   }
