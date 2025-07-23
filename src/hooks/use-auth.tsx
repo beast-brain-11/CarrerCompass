@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const adminEmail = 'priaanshgupta@gmail.com';
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -31,12 +32,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (loading) return;
 
-    const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/survey' || pathname === '/';
-    const isProtectedPage = !isAuthPage;
+    const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/';
+    const isSurveyPage = pathname === '/survey';
 
-    if (!user && isProtectedPage) {
+    // If user is admin, they can bypass the survey page
+    if (user?.email === adminEmail && isSurveyPage) {
+        router.push('/dashboard');
+        return;
+    }
+
+    if (!user && !isAuthPage && !isSurveyPage) {
       router.push('/login');
     }
+    
     if (user && isAuthPage && pathname !== '/') {
         router.push('/dashboard');
     }

@@ -62,7 +62,13 @@ export default function RegisterPage() {
         title: "Success!",
         description: "Your account has been created.",
       });
-      router.push('/survey');
+
+      if (values.email === 'priaanshgupta@gmail.com') {
+        router.push('/dashboard');
+      } else {
+        router.push('/survey');
+      }
+
     } catch (error: any) {
       toast({
         variant: "destructive",
