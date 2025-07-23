@@ -5,10 +5,9 @@ import { Sparkles, FileText, Bot, Briefcase, Lightbulb } from 'lucide-react';
 import type { Job, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { summarizeCompanyCulture, CompanyCultureOutput } from '@/ai/flows/company-culture-summarizer';
 import ResumeTailorDialog from './resume-tailor-dialog';
-import SkillGapDialog from './skill-gap-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface AiAssistantPanelProps {
@@ -27,7 +26,7 @@ export default function AiAssistantPanel({ job, userProfile }: AiAssistantPanelP
     setIsCultureLoading(true);
     setCultureSummary(null);
     try {
-      const result = await summarizeCompanyCulture({ companyName: job.companyName });
+      const result = await summarizeCompanyCulture({ companyName: job.company_name });
       if (result && result.cultureSummary && result.cultureSummary !== 'No information found') {
         setCultureSummary(result);
       } else {
@@ -67,9 +66,6 @@ export default function AiAssistantPanel({ job, userProfile }: AiAssistantPanelP
           <Button className="w-full justify-start" variant="secondary" disabled>
             <Bot className="mr-2 h-4 w-4" /> Generate Cover Letter (soon)
           </Button>
-          <Button className="w-full justify-start" onClick={() => setSkillGapDialogOpen(true)}>
-            <Lightbulb className="mr-2 h-4 w-4" /> Analyze My Skill Gap
-          </Button>
           <Button className="w-full justify-start" variant="outline" onClick={handleSummarizeCulture} disabled={isCultureLoading}>
             <Briefcase className="mr-2 h-4 w-4" /> 
             {isCultureLoading ? 'Analyzing Culture...' : 'Summarize Company Culture'}
@@ -78,7 +74,7 @@ export default function AiAssistantPanel({ job, userProfile }: AiAssistantPanelP
           {cultureSummary && (
              <Alert className="mt-4">
                 <Briefcase className="h-4 w-4" />
-                <AlertTitle className="font-headline">Culture at {job.companyName}</AlertTitle>
+                <AlertTitle className="font-headline">Culture at {job.company_name}</AlertTitle>
                 <AlertDescription>
                     {cultureSummary.cultureSummary}
                 </AlertDescription>
@@ -90,14 +86,8 @@ export default function AiAssistantPanel({ job, userProfile }: AiAssistantPanelP
       <ResumeTailorDialog
         isOpen={isTailorDialogOpen}
         setIsOpen={setTailorDialogOpen}
-        jobDescriptionText={job.descriptionText}
-        masterResumeText={userProfile.masterResume.text}
-      />
-       <SkillGapDialog
-        isOpen={isSkillGapDialogOpen}
-        setIsOpen={setSkillGapDialogOpen}
-        userSkills={userProfile.skills}
-        jobDescriptionText={job.descriptionText}
+        jobDescriptionText={job.description}
+        masterResumeText={userProfile.master_resume}
       />
     </>
   );

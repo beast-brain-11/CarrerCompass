@@ -37,53 +37,48 @@ We have successfully built a robust frontend application and integrated the core
 
 ---
 
-## 3. What Needs to Be Done: The Backend & Live Data Integration
+## 3. What Has Been Done: The Backend & Live Data Integration
 
-The critical next step is to replace the placeholder data with a live, persistent backend and real-time data scraping. This is the work required to make the application fully autonomous and ready for public launch.
+The placeholder data has been replaced with a live, persistent backend.
 
-### 3.1. Task 1: Database & Backend Setup
+### 3.1. Task 1: Database & Backend Setup (Completed)
 
 *   **Objective:** Create a robust backend and database to store all user and application data.
-*   **Requirements:**
-    1.  **Choose a Backend Framework:** Python (FastAPI, Django) or Node.js (Express) are recommended.
-    2.  **Set up a Database:** PostgreSQL is recommended for its relational integrity.
-    3.  **Create Database Schema:** Design and implement tables for:
-        *   `users`: To store user profile information, preferences, and a link to their Firebase Auth UID.
-        *   `jobs`: To store aggregated job postings.
-        *   `applications`: To store the relationship between a user and a job, including status, notes, etc.
-        *   `work_experience`, `education`, `skills`, etc.
-    4.  **Develop API Endpoints:** Create a full suite of RESTful or GraphQL APIs for all CRUD (Create, Read, Update, Delete) operations. Examples:
-        *   `POST /api/users` - Create a user profile after initial registration.
-        *   `GET /api/users/{userId}/profile` - Fetch a user's full profile.
-        *   `PUT /api/users/{userId}/profile` - Update a user's profile.
-        *   `GET /api/jobs` - Fetch jobs with filtering and pagination.
-        *   `POST /api/applications` - Create a new job application.
-        *   `PUT /api/applications/{appId}` - Update an application's status (e.g., for the Kanban board).
-    5.  **Secure the API:** Ensure that API endpoints are protected and that users can only access and modify their own data. Use the Firebase Auth UID from the user's session to authorize requests.
+*   **Status: Completed**
+    *   **Backend Framework:** Node.js with Express and TypeScript.
+    *   **Database:** PostgreSQL schema has been created (`server/schema.sql`).
+    *   **API Endpoints:** A full suite of RESTful APIs for all CRUD operations has been developed.
+    *   **Security:** The API is secured using Firebase Admin to verify user tokens.
 
-### 3.2. Task 2: Real-Time Job Scraping Service
+### 3.2. Task 2: Frontend Integration (Completed)
 
-*   **Objective:** Replace the static `jobPostingsData` with a service that continuously scrapes job boards and populates the `jobs` table in the database.
+*   **Objective:** Connect the existing Next.js frontend to the new backend API, removing all placeholder data.
+*   **Status: Completed**
+    *   **Placeholder Fetches Replaced:** All pages and components now fetch data from the live backend.
+    *   **Data Mutations Implemented:** All forms and actions are wired up to the backend.
+    *   **Loading & Error States Handled:** The UI gracefully handles loading and error states.
+    *   **Resume Parsing:** A `pdf-parse` integration allows users to upload and parse their resumes.
+
+---
+
+## 4. What Needs to Be Done: Real-Time Job Scraping
+
+The final step to make the application fully autonomous is to build the real-time job scraping service.
+
+### 4.1. Task: Real-Time Job Scraping Service
+
+*   **Objective:** Replace the need for manual job entry with a service that continuously scrapes job boards and populates the `jobs` table in the database.
 *   **Requirements:**
     1.  **Develop Scrapers:** Build robust web scrapers for key job boards (e.g., LinkedIn, Indeed, Glassdoor). Use libraries like Python's BeautifulSoup/Scrapy or Node.js's Puppeteer/Playwright.
     2.  **Handle Anti-Scraping:** Implement strategies to handle dynamic content (JavaScript-rendered pages) and avoid getting blocked (e.g., rotating user agents, using proxy services like ScrapeNinja).
     3.  **Create a Scheduler:** Set up a scheduled task (e.g., a cron job or a cloud-based scheduler like Google Cloud Scheduler) to run the scrapers periodically (e.g., daily) to find new jobs and update existing ones.
     4.  **Data Normalization:** Process the scraped data to fit the `jobs` table schema, ensuring consistency across different sources.
 
-### 3.3. Task 3: Frontend Integration
-
-*   **Objective:** Connect the existing Next.js frontend to the new backend API, removing all placeholder data.
-*   **Requirements:**
-    1.  **Replace Placeholder Fetches:** Go through every page and component (especially `/jobs`, `/jobs/[jobId]`, `/tracker`, `/profile`) and replace calls to the placeholder data with `fetch` calls to your new API endpoints.
-    2.  **Implement Data Mutations:** Wire up all forms and actions (e.g., saving the profile, adding an application, dragging a card on the tracker) to send `POST`, `PUT`, or `DELETE` requests to the API.
-    3.  **Handle Loading & Error States:** Ensure the UI gracefully handles API loading times and potential errors (e.g., show skeletons/spinners, display error messages from the API).
-    4.  **Resume Parsing:** Integrate a library (like `pdf-parse`) or an external service to parse uploaded resumes (PDF/DOCX) and pre-fill the user's profile and master resume text area.
-
 ---
 
-## 4. Path to Launch
+## 5. Path to Launch
 
-1.  **Build & Integrate Backend:** Complete all tasks in section 3.
+1.  **Build Job Scraping Service:** Complete the final task.
 2.  **Testing:** Conduct thorough end-to-end testing to ensure the frontend, backend, AI flows, and scrapers all work together flawlessly.
 3.  **Deployment:** Deploy the Next.js frontend (e.g., on Vercel or Firebase App Hosting) and the backend server/database (e.g., on a cloud provider like Google Cloud, AWS, or Heroku).
 4.  **Launch!**
