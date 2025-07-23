@@ -12,19 +12,20 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const SkillGapAnalyzerInputSchema = z.object({
-  userSkills: z.array(z.string()).describe('A list of the user\u2019s skills.'),
-  jobSkills: z.array(z.string()).describe('A list of the required skills for the job.'),
+  userSkills: z.array(z.string()).describe("A list of the user’s skills from their profile."),
+  jobDescriptionText: z.string().describe('The full text of the target job description.'),
 });
 export type SkillGapAnalyzerInput = z.infer<typeof SkillGapAnalyzerInputSchema>;
 
 const SkillGapAnalyzerOutputSchema = z.object({
+  requiredSkills: z.array(z.string()).describe('A list of skills explicitly mentioned or inferred from the job description.'),
   matchingSkills: z.array(z.string()).describe('A list of skills that match between the user and the job requirements.'),
-  skillGaps: z.array(z.string()).describe('A list of skills required by the job that are missing from the user\u2019s skills.'),
+  skillGaps: z.array(z.string()).describe('A list of skills required by the job that are missing from the user’s skills.'),
   learningSuggestions: z
     .array(
       z.object({
         skill: z.string().describe('The skill gap that needs to be addressed.'),
-        suggestion: z.string().describe('A suggested category of learning resource for the skill gap.'),
+        suggestion: z.string().describe('A specific, actionable suggestion for a learning resource or project to address the skill gap.'),
       })
     )
     .describe('Suggestions for learning resources to address the skill gaps.'),
@@ -42,17 +43,20 @@ const prompt = ai.definePrompt({
   prompt: `SYSTEM: You are a strategic career advisor. Your goal is to identify the skill gaps between a user's current skillset and the requirements of a target job.
 
 USER's SKILLS:
-{{{userSkills}}}
+{{#each userSkills}}
+- {{{this}}}
+{{/each}}
 
-TARGET JOB's REQUIRED SKILLS (extracted):
-{{{jobSkills}}}
+TARGET JOB DESCRIPTION:
+{{{jobDescriptionText}}}
 
 INSTRUCTIONS:
-1.  Compare the two lists of skills.
-2.  Identify which of the user's skills are a direct match for the job's requirements.
-3.  Identify the critical skills required by the job that are MISSING from the user's skill list. These are the skill gaps.
-4.  For each identified skill gap, suggest a category of learning resource (e.g., "Online Courses on Data Visualization", "Books on Agile Methodologies", "Certifications for Cloud Platforms").
-5.  Return a JSON object with three keys: "matchingSkills" (array of strings), "skillGaps" (array of strings), and "learningSuggestions" (an array of objects with "skill" and "suggestion" keys).`,
+1.  Read the entire job description and extract a list of all required skills. Infer skills from tools, technologies, and responsibilities mentioned.
+2.  Compare the user's skill list with the extracted list of required job skills.
+3.  Identify which of the user's skills are a direct match for the job's requirements.
+4.  Identify the critical skills required by the job that are MISSING from the user's skill list. These are the skill gaps.
+5.  For each identified skill gap, provide a concrete and actionable learning suggestion. For example, instead of "Online Courses", suggest "Build a small project using React and a public API to demonstrate state management" or "Take the 'Google Data Analytics Professional Certificate' on Coursera".
+6.  Return a JSON object with four keys: "requiredSkills" (array of strings), "matchingSkills" (array of strings), "skillGaps" (array of strings), and "learningSuggestions" (an array of objects with "skill" and "suggestion" keys).`,
 });
 
 const skillGapAnalyzerFlow = ai.defineFlow(
@@ -66,4 +70,3 @@ const skillGapAnalyzerFlow = ai.defineFlow(
     return output!;
   }
 );
-

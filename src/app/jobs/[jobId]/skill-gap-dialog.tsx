@@ -13,22 +13,22 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, AlertCircle, Lightbulb } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Lightbulb, ListChecks } from 'lucide-react';
 
 interface SkillGapDialogProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   userSkills: string[];
-  jobSkills: string[];
+  jobDescriptionText: string;
 }
 
 export default function SkillGapDialog({
   isOpen,
   setIsOpen,
   userSkills,
-  jobSkills,
+  jobDescriptionText,
 }: SkillGapDialogProps) {
   const [analysis, setAnalysis] = useState<SkillGapAnalyzerOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,13 +38,14 @@ export default function SkillGapDialog({
     if (isOpen && !analysis && !isLoading) {
       handleAnalyze();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const handleAnalyze = async () => {
     setIsLoading(true);
     setAnalysis(null);
     try {
-      const result = await skillGapAnalyzer({ userSkills, jobSkills });
+      const result = await skillGapAnalyzer({ userSkills, jobDescriptionText });
       setAnalysis(result);
     } catch (error) {
       console.error('Error analyzing skill gap:', error);
@@ -62,14 +63,12 @@ export default function SkillGapDialog({
     setIsOpen(open);
     if (!open) {
       // Don't reset data so it's cached for the session
-      // setAnalysis(null);
-      // setIsLoading(false);
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl h-[70vh] flex flex-col">
+      <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="font-headline">AI Skill Gap Analysis</DialogTitle>
           <DialogDescription>
@@ -82,16 +81,21 @@ export default function SkillGapDialog({
             {analysis && (
                  <ScrollArea className="h-full pr-6">
                     <div className="space-y-6">
-                        <SkillSection icon={CheckCircle2} title="Matching Skills" skills={analysis.matchingSkills} variant="default" className="text-green-600"/>
-                        <SkillSection icon={AlertCircle} title="Skill Gaps" skills={analysis.skillGaps} variant="destructive" className="text-red-600"/>
+                        <SkillSection icon={ListChecks} title="All Required Skills" skills={analysis.requiredSkills} variant="secondary" />
+                        <SkillSection icon={CheckCircle2} title="Your Matching Skills" skills={analysis.matchingSkills} variant="default" className="text-green-600"/>
+                        <SkillSection icon={AlertCircle} title="Your Skill Gaps" skills={analysis.skillGaps} variant="destructive" className="text-red-600"/>
                         <div>
                             <h3 className="font-headline text-lg font-semibold mb-2 flex items-center gap-2"><Lightbulb className="text-amber-500" /> Learning Suggestions</h3>
                             <div className="space-y-2">
                                 {analysis.learningSuggestions.map((item, index) => (
                                     <div key={index} className="text-sm p-3 bg-muted/50 rounded-md">
-                                        <span className="font-semibold">{item.skill}:</span> {item.suggestion}
+                                        <p className="font-semibold">{item.skill}</p>
+                                        <p className="text-muted-foreground">{item.suggestion}</p>
                                     </div>
                                 ))}
+                                {analysis.learningSuggestions.length === 0 && (
+                                    <p className="text-sm text-muted-foreground">No specific learning suggestions needed. Your skills are a great match!</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -109,9 +113,9 @@ export default function SkillGapDialog({
   );
 }
 
-const SkillSection = ({ icon: Icon, title, skills, variant, className }: { icon: React.ElementType, title: string, skills: string[], variant: "default" | "destructive", className: string }) => (
+const SkillSection = ({ icon: Icon, title, skills, variant, className }: { icon: React.ElementType, title: string, skills: string[], variant: "default" | "destructive" | "secondary", className?: string }) => (
     <div>
-        <h3 className={`font-headline text-lg font-semibold mb-2 flex items-center gap-2 ${className}`}>
+        <h3 className={`font-headline text-lg font-semibold mb-3 flex items-center gap-2 ${className}`}>
             <Icon/> {title}
         </h3>
         <div className="flex flex-wrap gap-2">
@@ -124,26 +128,26 @@ const SkillSection = ({ icon: Icon, title, skills, variant, className }: { icon:
 
 const LoadingSkeleton = () => (
     <div className="space-y-6 animate-pulse">
-        <div className="space-y-2">
+        <div className="space-y-3">
             <Skeleton className="h-6 w-1/3" />
             <div className="flex flex-wrap gap-2">
-                <Skeleton className="h-6 w-24 rounded-full" />
-                <Skeleton className="h-6 w-32 rounded-full" />
-                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-7 w-24 rounded-full" />
+                <Skeleton className="h-7 w-32 rounded-full" />
+                <Skeleton className="h-7 w-20 rounded-full" />
             </div>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
             <Skeleton className="h-6 w-1/3" />
             <div className="flex flex-wrap gap-2">
-                <Skeleton className="h-6 w-28 rounded-full" />
-                <Skeleton className="h-6 w-24 rounded-full" />
+                <Skeleton className="h-7 w-28 rounded-full" />
+                <Skeleton className="h-7 w-24 rounded-full" />
             </div>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
             <Skeleton className="h-6 w-1/2" />
             <div className="space-y-2">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
             </div>
         </div>
     </div>

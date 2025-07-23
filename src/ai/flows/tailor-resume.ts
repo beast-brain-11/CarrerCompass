@@ -21,11 +21,12 @@ export type TailorResumeInput = z.infer<typeof TailorResumeInputSchema>;
 
 const TailorResumeOutputSchema = z.object({
   headline: z.string().describe('The tailored headline for the resume.'),
+  summary: z.string().describe('The rewritten professional summary to align with the job description.'),
   workExperience: z.array(
     z.object({
       company: z.string().describe('The company name.'),
       title: z.string().describe('The job title.'),
-      rewrittenDescription: z.string().describe('The rewritten description for the work experience.'),
+      rewrittenDescription: z.string().describe('The rewritten description for the work experience, optimized with keywords from the job description and quantified achievements.'),
     })
   ).describe('The tailored work experience entries.'),
 });
@@ -49,10 +50,10 @@ TARGET JOB DESCRIPTION:
 
 INSTRUCTIONS:
 1.  Carefully analyze the job description to identify the top 5-7 most critical skills, experiences, and qualifications.
-2.  Rewrite the professional summary/headline of the resume to directly reflect the target role.
-3.  For each work experience entry in the resume, rephrase the bullet points to use powerful action verbs and metrics that align with the requirements in the job description. Do NOT invent new experiences. Only rephrase existing ones.
-4.  Ensure the most relevant skills are prominently featured.
-5.  Return the output as a single JSON object with two keys: \"headline\" (string) and \"workExperience\" (an array of objects, each with \"company\", \"title\", and \"rewrittenDescription\" keys).`,
+2.  Rewrite the professional summary/headline of the resume to directly reflect the target role and incorporate key terms from the job description.
+3.  For each work experience entry in the resume, rephrase the bullet points to use powerful action verbs and metrics that align with the requirements in the job description. Do NOT invent new experiences. Only rephrase existing ones to highlight their relevance. Quantify achievements where possible based on the provided resume text.
+4.  Ensure the most relevant skills are prominently featured in the rewritten content.
+5.  Return the output as a single JSON object with three keys: "headline" (string for the very top of the resume), "summary" (a 2-3 sentence professional summary), and "workExperience" (an array of objects, each with "company", "title", and "rewrittenDescription" keys).`,
 });
 
 const tailorResumeFlow = ai.defineFlow(
