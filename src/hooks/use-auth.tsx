@@ -1,11 +1,12 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { onAuthStateChanged, User, getRedirectResult } from 'firebase/auth';
+import { onAuthStateChanged, User, getRedirectResult, getAdditionalUserInfo } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from './use-toast';
+import api from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
@@ -23,53 +24,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const adminEmail = 'priaanshgupta@gmail.com';
 
   useEffect(() => {
-    const handleRedirectResult = async () => {
-        try {
-            const result = await getRedirectResult(auth);
-            if (result) {
-                const user = result.user;
-                toast({
-                    title: "Success!",
-                    description: "You've been logged in successfully.",
-                });
-
-                if (user.email === adminEmail) {
-                    router.push('/dashboard');
-                } else {
-                    const isNewUser = result.additionalUserInfo?.isNewUser;
-                    if (isNewUser) {
-                        router.push('/survey');
-                    } else {
-                        router.push('/dashboard');
-                    }
-                }
-            }
-        } catch (error: any) {
-            toast({
-                variant: "destructive",
-                title: "Login failed",
-                description: error.message,
-            });
-        } finally {
-            // We set loading to false here only if there was no redirect result.
-            // If there was a redirect, the onAuthStateChanged will handle setting the user
-            // and the other useEffect will handle navigation, so we avoid a flash of content.
-            const result = await getRedirectResult(auth); // Check again, might be cached
-            if (!result) {
-                setLoading(false);
-            }
-        }
-    }
-    
-    // Call this immediately
-    handleRedirectResult();
-
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
-      // This is the main loading state controller.
-      // It ensures we don't stop loading until we know the auth state.
       setLoading(false);
     });
+
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result) {
+          const user = result.user;
+          toast({
+            title: "Success!",
+            description: "You've been logged in successfully.",
+          });
+
+          const additionalUserInfo = getAdditionalUserInfo(result);
+          if (additionalUserInfo?.isNewUser) {
+            try {
+              // We need to get the token to authenticate with our backend
+              const token = await user.getIdToken();
+              // Create user in our DB
+              await fetch('http://localhost:3001/api/users', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  firstName: user.displayName?.split(' ')[0] || '',
+                  lastName: user.displayName?.split(' ')[1] || '',
+                  email: user.email,
+                }),
+              });
+              router.push('/survey');
+            } catch (error) {
+              console.error("Failed to create user profile", error);
+              toast({
+                variant: "destructive",
+                title: "Setup failed",
+                description: "Could not create your user profile.",
+              });
+            }
+          } else {
+            router.push('/dashboard');
+          }
+        }
+      })
+      .catch((error) => {
+        toast({
+          variant: "destructive",
+          title: "Login failed",
+          description: error.message,
+        });
+      });
 
     return () => unsubscribe();
   }, [router, toast]);
