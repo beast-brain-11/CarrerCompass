@@ -56,6 +56,18 @@ export default function RegisterPage() {
       confirmPassword: "",
     },
   });
+  
+  const handleError = (error: any) => {
+    let description = error.message;
+    if (error.code === 'auth/operation-not-allowed') {
+      description = 'This sign-up method is not enabled. Please enable it in your Firebase console under Authentication > Sign-in method.';
+    }
+    toast({
+      variant: "destructive",
+      title: "Registration failed",
+      description: description,
+    });
+  }
 
   const handleSuccessfulRegistration = (user: any) => {
       toast({
@@ -83,11 +95,7 @@ export default function RegisterPage() {
       handleSuccessfulRegistration(userCredential.user);
 
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Registration failed",
-        description: error.message,
-      });
+      handleError(error);
     } finally {
       setIsLoading(false);
     }
@@ -100,11 +108,7 @@ export default function RegisterPage() {
         const result = await signInWithPopup(auth, provider);
         handleSuccessfulRegistration(result.user);
     } catch (error: any) {
-        toast({
-            variant: "destructive",
-            title: "Google Sign-up failed",
-            description: error.message,
-        });
+        handleError(error);
     } finally {
         setIsGoogleLoading(false);
     }

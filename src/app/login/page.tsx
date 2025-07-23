@@ -52,6 +52,18 @@ export default function LoginPage() {
     },
   });
 
+  const handleError = (error: any) => {
+    let description = error.message;
+    if (error.code === 'auth/operation-not-allowed') {
+      description = 'This sign-in method is not enabled. Please enable it in your Firebase console under Authentication > Sign-in method.';
+    }
+    toast({
+      variant: "destructive",
+      title: "Login failed",
+      description: description,
+    });
+  }
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
@@ -62,11 +74,7 @@ export default function LoginPage() {
       });
       router.push('/dashboard');
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Login failed",
-        description: error.message,
-      });
+      handleError(error);
     } finally {
       setIsLoading(false);
     }
@@ -83,11 +91,7 @@ export default function LoginPage() {
         });
         router.push('/dashboard');
     } catch (error: any) {
-        toast({
-            variant: "destructive",
-            title: "Google Sign-in failed",
-            description: error.message,
-        });
+        handleError(error);
     } finally {
         setIsGoogleLoading(false);
     }
