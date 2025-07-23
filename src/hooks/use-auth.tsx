@@ -44,17 +44,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               // We need to get the token to authenticate with our backend
               const token = await user.getIdToken();
               // Create user in our DB
-              await fetch('http://localhost:3001/api/users', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  firstName: user.displayName?.split(' ')[0] || '',
-                  lastName: user.displayName?.split(' ')[1] || '',
-                  email: user.email,
-                }),
+              await api.post('/users', {
+                firstName: user.displayName?.split(' ')[0] || '',
+                lastName: user.displayName?.split(' ')[1] || '',
+                email: user.email,
               });
               router.push('/survey');
             } catch (error) {
